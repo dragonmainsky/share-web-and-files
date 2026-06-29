@@ -11,6 +11,10 @@ env/
 cloudflared.exe
 cloudflared
 
+build/
+dist/
+*.spec
+
 *.log
 .DS_Store
 Thumbs.db
