@@ -4,7 +4,9 @@ A small desktop app for sharing a folder or single file over your local network,
 
 ## Features
 
-- Pick a folder or a single file to share.
+- Pick a folder or multiple files to share.
+- Automatically compress multiple files into a `.zip` archive before sharing (with option to disable).
+- Select a specific Start file (e.g., `index.html`) using a built-in file browser.
 - Share over the local network.
 - Share over the internet with a temporary Cloudflare Tunnel URL.
 - Generate a QR code for the sharing link.
