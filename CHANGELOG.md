@@ -1,12 +1,33 @@
-# Share Web and Files - Version Update Report
+# Share Web and Files — Changelog
 
-## What's New
-- **Browse Start File:** Added a "Browse File..." button next to the "Start file" input field. You can now easily pick an `index.html` (or any other starting file) from the selected folder without typing the path manually.
-- **Zip Files Option:** When sharing multiple files, a new "Zip files before sharing" checkbox will automatically appear. 
-  - If checked, all selected files will be automatically compressed into a single `.zip` archive for easy downloading.
-  - If unchecked, the files will be shared as a directory listing, allowing the receiver to download individual files.
+## v1.1.0 — 2026-09-19
 
-## Technical Details
-- Updated `ui.py` to include the new Browse button and Zip Checkbox logic.
-- Updated `core.py` to handle the conditional zipping process and raw file serving.
-- Compiled the latest version into a standalone executable (`ShareWebAndFiles.exe`).
+### ✨ New Features
+- **Browse Start File button** — Added a "Browse File…" button next to the start file input.  
+  Now you can pick your starting file (e.g. `index.html`) directly from the selected folder instead of typing the name manually.
+- **Zip before sharing** — When you select **more than 1 file** in Files mode, a  
+  **"Zip files before sharing"** checkbox appears automatically (checked by default).  
+  - ✅ Checked → all files are compressed into `shared_files.zip` and shared as a single download.  
+  - ☐ Unchecked → files are served as a directory listing so the receiver can pick individual files.
+
+### 🔧 Improvements
+- Start file entry and browse button are properly disabled/enabled when sharing starts/stops.
+- Zip checkbox is hidden when switching back to Folder mode or clearing the path.
+
+### 📁 Files Changed
+| File | What changed |
+|------|-------------|
+| `ui.py` | Added Browse File button, Zip checkbox, updated `_clear_path`, `_browse_path`, `_lock_inputs` |
+| `core.py` | Added `zip_files` parameter, conditional zip vs raw file serving logic |
+
+---
+
+## v1.0.0 — 2026-09-19
+
+### 🎉 Initial Release
+- Share a folder or individual files over LAN or the internet.
+- Local sharing via built-in HTTP server.
+- Internet sharing via temporary Cloudflare Tunnel URL.
+- QR code generation for easy mobile access.
+- Auto-download of `cloudflared.exe` on first use (Windows).
+- Copy link button.
