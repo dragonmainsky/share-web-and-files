@@ -46,24 +46,63 @@ class SharingCore:
         self.server_port = self.http_server.server_address[1]
         threading.Thread(target=self.http_server.serve_forever, daemon=True).start()
 
-    def start_sharing(self, selected_path: str, sharing_type: str, connection_mode: str):
+    def start_sharing(self, selected_path, sharing_type: str, connection_mode: str, start_file: str = None, zip_files: bool = True):
         if not selected_path:
             self.app.on_error("Please select a file or folder first!")
             return
 
-        if not os.path.exists(selected_path):
-            self.app.on_error("Selected path no longer exists.")
-            return
+        if isinstance(selected_path, (tuple, list)):
+            if not all(os.path.exists(p) for p in selected_path):
+                self.app.on_error("Some selected files no longer exist.")
+                return
+        else:
+            if not os.path.exists(selected_path):
+                self.app.on_error("Selected path no longer exists.")
+                return
 
         self.is_sharing = True
         self.app.on_status_change("Launching local server…", "#f1c40f")
 
-        if sharing_type == "Single File":  # Matches the UI segment value
-            serve_dir = os.path.dirname(selected_path) or "."
-            file_name = os.path.basename(selected_path)
+        if sharing_type == "Files":
+            if isinstance(selected_path, (tuple, list)) and len(selected_path) > 1:
+                if zip_files:
+                    self.app.safe_update_status("Zipping files…", "#f1c40f")
+                    import tempfile
+                    import zipfile
+                    
+                    temp_dir = tempfile.mkdtemp(prefix="share_")
+                    zip_path = os.path.join(temp_dir, "shared_files.zip")
+                    
+                    try:
+                        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                            for p in selected_path:
+                                zipf.write(p, os.path.basename(p))
+                    except Exception as e:
+                        self.app.on_error(f"Failed to zip files: {e}")
+                        return
+                    
+                    serve_dir = temp_dir
+                    file_name = "shared_files.zip"
+                else:
+                    self.app.safe_update_status("Preparing files…", "#f1c40f")
+                    import tempfile
+                    import shutil
+                    temp_dir = tempfile.mkdtemp(prefix="share_")
+                    try:
+                        for p in selected_path:
+                            shutil.copy2(p, os.path.join(temp_dir, os.path.basename(p)))
+                    except Exception as e:
+                        self.app.on_error(f"Failed to copy files: {e}")
+                        return
+                    serve_dir = temp_dir
+                    file_name = ""
+            else:
+                single_path = selected_path[0] if isinstance(selected_path, (tuple, list)) else selected_path
+                serve_dir = os.path.dirname(single_path) or "."
+                file_name = os.path.basename(single_path)
         else:
             serve_dir = selected_path
-            file_name = ""
+            file_name = start_file if start_file else ""
 
         self.start_local_server(serve_dir)
 

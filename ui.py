@@ -19,14 +19,14 @@ class ShareApp(ctk.CTk):
 
         # Dimensions configuration
         self.start_width = 500
-        self.start_height = 490
-        self.expanded_height = 760
+        self.start_height = 550
+        self.expanded_height = 820
         self.current_height = self.start_height
         self.geometry(f"{self.start_width}x{self.start_height}")
 
         # State 
         self.selected_path = ""
-        self.sharing_type = tk.StringVar(value="folder")
+        self.sharing_type = tk.StringVar(value="Folder")
         self.connection_mode = tk.StringVar(value="internet")
         self.generated_url = ""
         self.animation_running = False
@@ -59,11 +59,11 @@ class ShareApp(ctk.CTk):
 
         segmented_button = ctk.CTkSegmentedButton(
             master=sel,
-            variable=self.sharing_type, values=["folder", "Single File"],
+            variable=self.sharing_type, values=["Folder", "Files"],
             command=self._clear_path
         )
         segmented_button.grid(row=1, column=0, columnspan=2, padx=16, pady=(8, 4), sticky="ew")
-        segmented_button.set("folder")
+        segmented_button.set("Folder")
 
         self._browse_btn = ctk.CTkButton(sel, text="Browse…", command=self._browse_path)
         self._browse_btn.grid(row=2, column=0, columnspan=2, padx=16, pady=(8, 4), sticky="ew")
@@ -72,6 +72,20 @@ class ShareApp(ctk.CTk):
             sel, text="No path selected", text_color="gray", wraplength=430, anchor="w"
         )
         self.path_label.grid(row=3, column=0, columnspan=2, padx=16, pady=(2, 10))
+
+        self.start_file_label = ctk.CTkLabel(sel, text="Start file (optional, e.g. index.html):", text_color="gray", anchor="w")
+        self.start_file_label.grid(row=4, column=0, columnspan=2, padx=16, pady=(0, 2), sticky="w")
+        
+        self.start_file_entry = ctk.CTkEntry(sel, placeholder_text="index.html")
+        self.start_file_entry.grid(row=5, column=0, padx=(16, 8), pady=(0, 10), sticky="ew")
+        
+        self.start_file_browse_btn = ctk.CTkButton(sel, text="Browse File…", width=90, command=self._browse_start_file)
+        self.start_file_browse_btn.grid(row=5, column=1, padx=(0, 16), pady=(0, 10), sticky="e")
+
+        self.zip_option_var = tk.BooleanVar(value=True)
+        self.zip_checkbox = ctk.CTkCheckBox(sel, text="Zip files before sharing", variable=self.zip_option_var)
+        # We will grid this dynamically in _browse_path
+
 
         # ── Step 2 ─────────────────────────────────────────────────────────────
         mode = ctk.CTkFrame(self)
@@ -120,6 +134,9 @@ class ShareApp(ctk.CTk):
         self.copy_btn = ctk.CTkButton(url_row, text="Copy", width=72, command=self._copy_link)
         self.copy_btn.pack(side="right")
 
+        # Initialize visibility
+        self._clear_path()
+
     # ── Animation Engine ──────────────────────────────────────────────────
     def _animate_window(self, target_height: int):
         if not self.winfo_exists():
@@ -146,15 +163,52 @@ class ShareApp(ctk.CTk):
         self.selected_path = ""
         self.path_label.configure(text="No path selected", text_color="gray", anchor="w")
         self._set_status("")
+        if hasattr(self, 'zip_checkbox'):
+            self.zip_checkbox.grid_remove()
+            
+        if self.sharing_type.get() == "Folder":
+            self.start_file_label.grid()
+            self.start_file_entry.grid()
+            self.start_file_browse_btn.grid()
+        else:
+            self.start_file_label.grid_remove()
+            self.start_file_entry.grid_remove()
+            self.start_file_browse_btn.grid_remove()
+
+    def _browse_start_file(self):
+        initial_dir = self.selected_path if self.selected_path else "/"
+        file_path = filedialog.askopenfilename(
+            title="Select Start File",
+            initialdir=initial_dir
+        )
+        if file_path:
+            if self.selected_path and file_path.startswith(self.selected_path):
+                rel_path = os.path.relpath(file_path, self.selected_path)
+                rel_path = rel_path.replace("\\", "/")
+                self.start_file_entry.delete(0, tk.END)
+                self.start_file_entry.insert(0, rel_path)
+            else:
+                self.start_file_entry.delete(0, tk.END)
+                self.start_file_entry.insert(0, os.path.basename(file_path))
 
     def _browse_path(self):
-        if self.sharing_type.get() == "folder":
+        if self.sharing_type.get() == "Folder":
             path = filedialog.askdirectory(title="Select Website / Game Root Folder")
         else:
-            path = filedialog.askopenfilename(title="Select File to Share")
+            path = filedialog.askopenfilenames(title="Select Files to Share")
+        
         if path:
             self.selected_path = path
-            display = os.path.basename(path) if self.sharing_type.get() == "Single File" else path
+            if hasattr(self, 'zip_checkbox'):
+                self.zip_checkbox.grid_remove()
+
+            if self.sharing_type.get() == "Files":
+                display = f"{len(path)} files selected" if isinstance(path, tuple) else os.path.basename(path)
+                if isinstance(path, tuple) and len(path) > 1:
+                    self.zip_option_var.set(True)
+                    self.zip_checkbox.grid(row=6, column=0, columnspan=2, padx=16, pady=(0, 10), sticky="w")
+            else:
+                display = path
             self.path_label.configure(text=display, text_color=("black", "white"))
             self._set_status("")
 
@@ -165,10 +219,17 @@ class ShareApp(ctk.CTk):
             self._on_sharing_stopped()
         else:
             self.action_btn.configure(text="Starting…", state="disabled")
+            start_file = self.start_file_entry.get().strip() if hasattr(self, 'start_file_entry') and self.sharing_type.get() == "Folder" else None
+            
+            # Get zip option
+            zip_files = self.zip_option_var.get() if hasattr(self, 'zip_option_var') else True
+
             self.core.start_sharing(
                 self.selected_path, 
                 self.sharing_type.get(), 
-                self.connection_mode.get()
+                self.connection_mode.get(),
+                start_file=start_file,
+                zip_files=zip_files
             )
 
     def _on_sharing_stopped(self):
@@ -235,6 +296,10 @@ class ShareApp(ctk.CTk):
         for w in self._radio_widgets:
             w.configure(state=state)
         self._browse_btn.configure(state=state)
+        if hasattr(self, 'start_file_entry'):
+            self.start_file_entry.configure(state=state)
+        if hasattr(self, 'start_file_browse_btn'):
+            self.start_file_browse_btn.configure(state=state)
 
     def _copy_link(self):
         self.clipboard_clear()
