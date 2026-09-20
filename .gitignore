@@ -18,3 +18,6 @@ dist/
 *.log
 .DS_Store
 Thumbs.db
+
+config.json
+custom_theme.json

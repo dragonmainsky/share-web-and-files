@@ -1,5 +1,28 @@
 # Share Web and Files — Changelog
 
+## v1.2.0 — 2026-09-21
+
+### ✨ New Features
+- **Hamburger Menu** — Added a sliding sidebar menu (☰) with smooth open/close animation.
+- **Settings Page** — In-app settings panel (no more pop-up windows):
+  - **Appearance Mode** — Switch between System, Light, and Dark mode instantly.
+  - **Color Theme** — Choose from blue, green, dark-blue, or pick a **custom color** via the built-in color picker.
+  - Settings are **saved to `config.json`** and persist across app restarts.
+- **About Page** — In-app About panel showing app name and version info.
+
+### 🔧 Improvements
+- "Start Sharing" button now follows the selected color theme instead of being hardcoded green.
+- All status-reset button colors now use `ThemeManager` for consistency with the active theme.
+- Added `config.json` and `custom_theme.json` to `.gitignore` (user-specific files).
+
+### 📁 Files Changed
+| File | What changed |
+|------|-------------|
+| `ui.py` | Added Hamburger Menu, Settings frame, About frame, config load/save, custom theme generator, ThemeManager-based button colors |
+| `.gitignore` | Added `config.json` and `custom_theme.json` |
+
+---
+
 ## v1.1.0 — 2026-09-19
 
 ### ✨ New Features
